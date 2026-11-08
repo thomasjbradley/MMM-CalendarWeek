@@ -7,7 +7,7 @@
 
 var NodeHelper = require("node_helper");
 var validUrl = require("valid-url");
-var CalendarFetcher = require("../default/calendar/calendarfetcher");
+var CalendarFetcher = require("../../defaultmodules/calendar/calendarfetcher");
 
 module.exports = NodeHelper.create({
 	// Override start method.
@@ -54,25 +54,28 @@ module.exports = NodeHelper.create({
 				//console.log(fetcher.events());
 
 				self.sendSocketNotification("CALENDAR_EVENTS", {
-					url: fetcher.url(),
-					events: fetcher.events()
+					url: fetcher.url,
+					events: fetcher.events
 				});
 			});
 
 			fetcher.onError(function(fetcher, error) {
 				self.sendSocketNotification("FETCH_ERROR", {
-					url: fetcher.url(),
-					error: error
+					url: fetcher.url,
+					error: error.message || error
 				});
 			});
 
 			self.fetchers[url] = fetcher;
+			fetcher.fetchCalendar();
 		} else {
 			//console.log('Use existing news fetcher for url: ' + url);
 			fetcher = self.fetchers[url];
-			fetcher.broadcastEvents();
+			if (fetcher.shouldRefetch()) {
+				fetcher.fetchCalendar();
+			} else {
+				fetcher.broadcastEvents();
+			}
 		}
-
-		fetcher.startFetch();
 	}
 });
